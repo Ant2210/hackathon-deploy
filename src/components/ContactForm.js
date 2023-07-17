@@ -1,10 +1,11 @@
-import React, { useRef } from "react";
+import React, {useRef, useState} from "react";
 import emailjs from "@emailjs/browser";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 
 const ContactForm = () => {
     const form = useRef();
+    const [showFlashMessage, setShowFlashMessage] = useState(false);
 
     const sendEmail = (e) => {
         e.preventDefault();
@@ -20,6 +21,7 @@ const ContactForm = () => {
                 (result) => {
                     console.log(result.text);
                     form.current.reset();
+                    setShowFlashMessage(true);
                 },
                 (error) => {
                     console.log(error.text);
@@ -30,7 +32,12 @@ const ContactForm = () => {
     return (
         <div id="contact-form-container" className="container p-3 my-3 mx-auto">
             <h1 className="fs-3 pb-3">Have a buoyant idea or just want to say hi? We're all ears! Drop us a line at Aqua La Vista.</h1>
-             <Form ref={form} onSubmit={sendEmail}>
+            {showFlashMessage && (
+                <div className="flash-message">
+                    <strong>Thank you for diving into our inbox! We appreciate your message and will aim to respond within 1 business day.</strong>
+                </div>
+            )}
+            <Form ref={form} onSubmit={sendEmail}>
                 <Form.Group className="mb-3" controlId="formName">
                     <Form.Label>Name</Form.Label>
                     <Form.Control
