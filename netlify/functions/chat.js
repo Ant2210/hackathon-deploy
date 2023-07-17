@@ -33,6 +33,7 @@ exports.handler = async (event) => {
       body: JSON.stringify(response),
     };
   } catch (error) {
+    console.error("OpenAI API Error:", error);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: "Something went wrong" }),
