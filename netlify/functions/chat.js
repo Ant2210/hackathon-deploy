@@ -1,87 +1,42 @@
-import React, {useRef, useState} from "react";
-import emailjs from "@emailjs/browser";
-import Button from "react-bootstrap/Button";
-import Form from "react-bootstrap/Form";
+import { Configuration, OpenAIApi } from "openai";
 
-const ContactForm = () => {
-    const form = useRef();
-    const [showFlashMessage, setShowFlashMessage] = useState(false);
+const openai = new OpenAIApi(
+  new Configuration({
+    apiKey: process.env.OPENAI_API_KEY,
+  })
+);
 
-    const sendEmail = (e) => {
-        e.preventDefault();
-
-        emailjs
-            .sendForm(
-                "gmail",
-                "aqua_la_vista",
-                form.current,
-                "EfZCNFX08xgO5f9eZ"
-            )
-            .then(
-                (result) => {
-                    console.log(result.text);
-                    form.current.reset();
-                    setShowFlashMessage(true);
-                },
-                (error) => {
-                    console.log(error.text);
-                }
-            );
+exports.handler = async (event) => {
+  if (event.httpMethod !== "POST") {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: "Method Not Allowed" }),
     };
+  }
 
-    return (
-        <div id="contact-form-container" className="container p-3 my-3 mx-auto">
-            <h1 className="fs-3 pb-3">Have a buoyant idea or just want to say hi? We're all ears! Drop us a line at Aqua La Vista.</h1>
-            {showFlashMessage && (
-                <div className="flash-message">
-                    <strong>Thank you for diving into our inbox! We appreciate your message and will aim to respond within 1 business day.</strong>
-                </div>
-            )}
-            <Form ref={form} onSubmit={sendEmail}>
-                <Form.Group className="mb-3" controlId="formName">
-                    <Form.Label>Name</Form.Label>
-                    <Form.Control
-                        type="text"
-                        name="name"
-                        placeholder="Enter your name here..."
-                        required
-                    />
-                </Form.Group>
+  const { location } = JSON.parse(event.body);
 
-                <Form.Group className="mb-3" controlId="formBasicEmail">
-                    <Form.Label>Email address</Form.Label>
-                    <Form.Control
-                        type="email"
-                        name="email"
-                        placeholder="Enter your email here..."
-                        required
-                    />
-                    <Form.Text className="text-muted">
-                        We'll never share your email with anyone else.
-                    </Form.Text>
-                </Form.Group>
+  try {
+    const res = await openai.createChatCompletion({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "user",
+          content: `Can you recommend 4 popular places for open water swimming near ${location}. Preface your response with 'Sure, here are some popular open water swimming locations near (nearest town or city)' followed by the characters \n. Please be detailed in your response and don't mention the Latitude or Longitude of the recommendations. could you create it as only a JSON object with the name of the location, the latitude, longitude and description as separate items, and remove the introduction sentence`,
+        },
+      ],
+    });
 
-                <Form.Group className="mb-3" controlId="formMessage">
-                    <Form.Label>Message</Form.Label>
-                    <Form.Control
-                        as="textarea"
-                        rows={3}
-                        name="message"
-                        placeholder="Enter your message here..."
-                        required
-                    />
-                </Form.Group>
-
-                <Button variant="primary" type="submit" value="Send" className="chat-buttons" style={{
-                                backgroundColor: "#575ABA",
-                                color: "white",
-                                border: "none",
-                            }}>
-                    Submit
-                </Button>
-            </Form>
-        </div>
-    );
+    const response = JSON.parse(res.data.choices[0].message.content);
+    return {
+      statusCode: 200,
+      body: JSON.stringify(response),
+    };
+  } catch (error) {
+    console.error("OpenAI API Error:", error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "Something went wrong" }),
+    };
+  }
 };
-
-export default ContactForm;
